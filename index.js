@@ -84,7 +84,7 @@ async function fetchAllData() {
                 subgoal.tasks.forEach(task => {
                     if(task.done) count++
                 })
-                subgoal.progress = count / subgoal.tasks.length
+                subgoal.progress = (count / subgoal.tasks.length) * 100
                 sum += subgoal.progress
             })
             goal.progress = sum / goal.subgoals.length
@@ -102,4 +102,4 @@ async function fetchAllData() {
     }
 }
 
-fetchAllData();
+module.exports = {fetchAllData};
