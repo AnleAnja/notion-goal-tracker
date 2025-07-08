@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { Button } from '$lib/components/ui/button/index.js';
 
     interface Task {
         id: string;
@@ -48,6 +49,7 @@
 
 <main>
     <h1>Goals</h1>
+    <Button>Click me</Button>
 
     {#if isLoading}
         <p>Loading your goals from Notion...</p>
