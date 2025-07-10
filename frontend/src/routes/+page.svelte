@@ -3,12 +3,16 @@
     import {Card, CardContent, CardHeader, CardTitle} from "$lib/components/ui/card/index.js";
     import {Progress} from "$lib/components/ui/progress/index.js";
     import {Badge} from "$lib/components/ui/badge/index.js";
+    import {Checkbox} from "$lib/components/ui/checkbox";
+    import * as Table from "$lib/components/ui/table/index.js";
 
     interface Task {
         id: string;
         name: string;
         done: boolean;
         due: string | null;
+        subgoal: string;
+        goal: string;
     }
 
     interface Subgoal {
@@ -31,7 +35,7 @@
     let error: string | null = null;
     let progress = 0;
     let completed = 0;
-    let tasks = 0;
+    let tasks: Task[] = [];
     let expandedGoalId: string | null = null;
 
     function toggleGoal(goalId: string) {
@@ -42,6 +46,17 @@
         }
     }
 
+    function formatDate(dateString: string | null): string {
+        if (!dateString) {
+            return '-';
+        }
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('de-DE', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        }).format(date);
+    }
 
     onMount(async () => {
         try {
@@ -54,7 +69,7 @@
             goals = await response.json() as Goal[];
             const totalProgress = goals.reduce((sum, goal) => sum + goal.progress, 0);
             progress = goals.length > 0 ? totalProgress / goals.length : 0;
-            tasks = goals.reduce((sum, goal) => sum + goal.subgoals.reduce((sum, subgoal) => sum + subgoal.tasks.length, 0), 0);
+            tasks = goals.flatMap(goal => goal.subgoals.flatMap(subgoal => subgoal.tasks.map(task => ({...task, subgoal: subgoal.name, goal: goal.name})))).sort((a, b) => new Date(b.due ?? '').getTime() - new Date(a.due ?? '').getTime());
             completed = goals.reduce((sum, goal) => sum + goal.subgoals.reduce((sum, subgoal) => sum + subgoal.tasks.filter(task => task.done).length, 0), 0);
             console.log(goals)
         } catch (e: any) {
@@ -78,7 +93,7 @@
         {
             title: 'Tasks Completed',
             value: completed.toFixed(0),
-            description: 'out of ' + tasks.toFixed(0) + ' total'
+            description: 'out of ' + tasks.length.toFixed(0) + ' total'
         }
     ]
 </script>
@@ -170,19 +185,35 @@
                             </CardContent>
                         </Card>
                     </div>
-                    <!--Badge
-                            class="h-5 min-w-5 rounded-full px-1.5 font-mono text-xs tabular-nums"
-                            variant="secondary"
-                    >
-                        {goal.progress.toFixed(0)}%
-                    </Badge>
-                </div>
-                <Progress value={goal.progress}/>
-            </div>
-        {/each}
-    </CardContent>
-</Card>
-</div-->
+                    <div class="mt-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle class="text-2xl font-bold">Recent Tasks</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Table.Root>
+                                    <Table.Body>
+                                        {#each tasks as task}
+                                            <Table.Row>
+                                                <Table.Cell class="w-[50px] pr-0">
+                                                    <Checkbox disabled={true} checked={task.done}/>
+                                                </Table.Cell>
+                                                <Table.Cell class="py-3">
+                                                    <div>
+                                                        <p class="font-medium text-card-foreground">{task.name}</p>
+                                                        <p class="text-xs text-muted-foreground">{task.goal} • {task.subgoal}</p>
+                                                    </div>
+                                                </Table.Cell>
+                                                <Table.Cell class="w-[160px] text-right font-medium text-muted-foreground">
+                                                    {formatDate(task.due)}
+                                                </Table.Cell>
+                                            </Table.Row>
+                                        {/each}
+                                    </Table.Body>
+                                </Table.Root>
+                            </CardContent>
+                        </Card>
+                    </div>
                 {/if}
             </div>
         </div>
